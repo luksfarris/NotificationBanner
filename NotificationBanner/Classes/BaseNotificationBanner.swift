@@ -123,6 +123,10 @@ public class BaseNotificationBanner: UIView {
         return [NotificationBanner.BannerObjectKey: self]
     }
     
+    private var bannerWidth: CGFloat {
+        return self.parentViewController?.view.frame.width ?? self.appWindow.frame.width
+    }
+    
     public override var backgroundColor: UIColor? {
         get {
             return contentView.backgroundColor
@@ -282,7 +286,7 @@ public class BaseNotificationBanner: UIView {
             self.bannerPosition = bannerPosition
             createBannerConstraints(for: bannerPosition)
             bannerPositionFrame = BannerPositionFrame(bannerPosition: bannerPosition,
-                                                      bannerWidth: appWindow.frame.width,
+                                                      bannerWidth: bannerWidth,
                                                       bannerHeight: bannerHeight,
                                                       maxY: maximumYPosition())
         }
@@ -317,6 +321,8 @@ public class BaseNotificationBanner: UIView {
             NotificationCenter.default.post(name: NotificationBanner.BannerWillAppear, object: self, userInfo: notificationUserInfo)
             delegate?.notificationBannerWillAppear(self)
             
+            self.isDisplaying = true
+            
             UIView.animate(withDuration: 0.5,
                            delay: 0.0,
                            usingSpringWithDamping: 0.7,
@@ -330,7 +336,6 @@ public class BaseNotificationBanner: UIView {
                 NotificationCenter.default.post(name: NotificationBanner.BannerDidAppear, object: self, userInfo: self.notificationUserInfo)
                 self.delegate?.notificationBannerDidAppear(self)
                 
-                self.isDisplaying = true
                 let tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(self.onTapGestureRecognizer))
                 self.addGestureRecognizer(tapGestureRecognizer)
                 
@@ -368,18 +373,20 @@ public class BaseNotificationBanner: UIView {
         Changes the frame of the notification banner when the orientation of the device changes
     */
     @objc private dynamic func onOrientationChanged() {
-        updateSpacerViewHeight()
-        
-        let newY = (bannerPosition == .top) ? (frame.origin.y) : (appWindow.frame.height - bannerHeight)
-        frame = CGRect(x: frame.origin.x,
-                       y: newY,
-                       width: appWindow.frame.width,
-                       height: bannerHeight)
-    
-        bannerPositionFrame = BannerPositionFrame(bannerPosition: bannerPosition,
-                                                  bannerWidth: appWindow.frame.width,
-                                                  bannerHeight: bannerHeight,
-                                                  maxY: maximumYPosition())
+        DispatchQueue.main.async {
+            self.updateSpacerViewHeight()
+            
+            let newY = (self.bannerPosition == .top) ? (self.frame.origin.y) : (self.appWindow.frame.height - self.bannerHeight)
+            self.frame = CGRect(x: self.frame.origin.x,
+                           y: newY,
+                           width: self.bannerWidth,
+                           height: self.bannerHeight)
+            
+            self.bannerPositionFrame = BannerPositionFrame(bannerPosition: self.bannerPosition,
+                                                      bannerWidth: self.bannerWidth,
+                                                      bannerHeight: self.bannerHeight,
+                                                      maxY: self.maximumYPosition())
+        }
     }
     
     /**
@@ -448,4 +455,3 @@ public class BaseNotificationBanner: UIView {
         titleLabel?.speed = .duration(CGFloat(duration - 3))
     }
 }
-
